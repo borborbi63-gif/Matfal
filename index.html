@@ -746,7 +746,7 @@ td.mono{color:var(--muted);font-family:var(--fm);font-size:12px;}
 // ════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycby7uZtF8dkrXdBRP0CQ7gFhv3NW1KapR8KbMZ6fNgzV59DTmcVKZN6PpUDQLdo41UOlhw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwE9YkRh4WxPOhD7I7S5WfCegXjNeEkXPXcuxSNsBNUszteRWlEDPJ66oOryjkiToZDUA/exec';
 
 // ════════════════════════════════════════
 // ZONA HORARIA PERÚ (UTC-5)
@@ -808,23 +808,23 @@ const fmtDate = fmtFechaPeru;
 const isAdmin = () => currentUser?.role==='admin';
 
 function poblarVendedores(){
-  const vendedores=users.filter(u=>u.role==='vendedor').map(u=>u.name.toUpperCase());
-  const lista=vendedores.length>0?vendedores:users.map(u=>u.name.toUpperCase());
+  const vendedores=users.filter(u=>u.role==='vendedor').map(u=>u.name);
+  const lista=vendedores.length>0?vendedores:users.map(u=>u.name);
   ['v_vendedor','e_vendedor'].forEach(id=>{
     const sel=document.getElementById(id);
-    if(!sel||sel.disabled) return;
+    if(!sel) return;
     const cur=sel.value;
+    sel.disabled=false;
     sel.innerHTML=lista.map(n=>`<option value="${n}">${n}</option>`).join('');
-    if(cur&&lista.includes(cur)) sel.value=cur;
+    if(cur&&lista.some(n=>n===cur)) sel.value=cur;
   });
+  // Si es vendedor bloquear su propio nombre
   if(currentUser&&!isAdmin()){
-    const myName=currentUser.name.toUpperCase();
+    const myName=currentUser.name;
     ['v_vendedor','e_vendedor'].forEach(id=>{
       const sel=document.getElementById(id);
       if(!sel) return;
-      if(![...sel.options].some(o=>o.value===myName)){
-        sel.innerHTML+=`<option value="${myName}">${myName}</option>`;
-      }
+      sel.innerHTML=`<option value="${myName}">${myName}</option>`;
       sel.value=myName;
       sel.disabled=true;
     });
@@ -959,6 +959,10 @@ async function doLogin(){
   document.getElementById('sbRole').textContent=found.role==='admin'?'Administrador':'Vendedor';
   document.querySelectorAll('.admin-only').forEach(el=>el.style.display=isAdmin()?'':'none');
   poblarVendedores();
+  if(!isAdmin()){
+    document.getElementById('v_vendedor').value=found.name;
+    document.getElementById('v_vendedor').disabled=true;
+  }
   if(!isAdmin()){
     document.getElementById('v_vendedor').value=found.name.toUpperCase();
     document.getElementById('v_vendedor').disabled=true;
@@ -1221,10 +1225,12 @@ function limpiarVenta(){
   document.getElementById('v_fecha').value=hoy;
   ['v_cliente','v_total','v_factura','v_fechaPago','v_comprobante','v_pago'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('v_tip').value='Venta';
-  if(!isAdmin()) document.getElementById('v_vendedor').value=currentUser.name.toUpperCase();
-  else {
-    const firstVend=document.getElementById('v_vendedor').options[0];
-    if(firstVend) document.getElementById('v_vendedor').value=firstVend.value;
+  if(!isAdmin()){
+    document.getElementById('v_vendedor').value=currentUser.name;
+    document.getElementById('v_vendedor').disabled=true;
+  } else {
+    document.getElementById('v_vendedor').disabled=false;
+    poblarVendedores();
   }
   document.getElementById('v_descripcion').value='En tira';
   document.getElementById('v_nota').value='RECIBO';
