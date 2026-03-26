@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MATFAL FOODS  — Sistema de Gestión </title>
+<title>MATFAL FOODS  — Sistema de Gestión</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -752,7 +752,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxjCB0Pp_j9cv0KqkN8vFSO
 // ZONA HORARIA PERÚ (UTC-5)
 // ════════════════════════════════════════
 function fechaHoyPeru(){
-  // Fuerza la fecha actual en hora de Perú (UTC-5)
   const now = new Date();
   const peru = new Date(now.toLocaleString('en-US', {timeZone:'America/Lima'}));
   const y = peru.getFullYear();
@@ -764,12 +763,11 @@ function horaAhoraPeru(){
   return new Date().toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit'});
 }
 function isoAFechaPeru(iso){
-  // Convierte "2026-03-07T05:00:00.000Z" → "2026-03-07" usando hora Lima
   if(!iso||iso==='null'||iso==='') return '';
   try{
     const d = new Date(iso);
     if(isNaN(d)) return String(iso).split('T')[0] || '';
-    return d.toLocaleDateString('en-CA',{timeZone:'America/Lima'}); // en-CA da YYYY-MM-DD
+    return d.toLocaleDateString('en-CA',{timeZone:'America/Lima'});
   }catch(e){ return String(iso).split('T')[0]||''; }
 }
 function fmtFechaPeru(iso){
@@ -793,12 +791,11 @@ let editingStockId = null;
 let editingClienteId = null;
 let isSaving = false;
 
-// Paginación registro
 let regPage = 1; const regPerPage = 15;
 let regSortKey = 'fecha'; let regSortDir = 1;
 let repSortKey = 'fecha'; let repSortDir = 1;
 
-let users = []; // Se carga desde Google Sheets (hoja USUARIOS)
+let users = [];
 
 // ════════════════════════════════════════
 // HELPERS
@@ -818,7 +815,6 @@ function poblarVendedores(){
     sel.innerHTML=lista.map(n=>`<option value="${n}">${n}</option>`).join('');
     if(cur&&lista.some(n=>n===cur)) sel.value=cur;
   });
-  // Si es vendedor bloquear su propio nombre
   if(currentUser&&!isAdmin()){
     const myName=currentUser.name;
     ['v_vendedor','e_vendedor'].forEach(id=>{
@@ -867,7 +863,6 @@ function parseRecords(raw){
     cantidad: parseFloat(r.cantidad)||0,
     minimo:   parseFloat(r.minimo)||0,
     estado:   r.estado==='true'||r.estado===true,
-    // Normaliza fechas ISO a YYYY-MM-DD en hora Perú
     fecha:    isoAFechaPeru(r.fecha)||r.fecha||'',
     fechaPago:r.fechaPago&&r.fechaPago!=='null'&&r.fechaPago!==''
               ? isoAFechaPeru(r.fechaPago)||r.fechaPago
@@ -891,7 +886,6 @@ async function loadAll(){
     productos = parseRecords(dProductos.records||[]);
     clientes  = dClientes.records||[];
     almacen   = parseRecords(dAlmacen.records||[]);
-    // Normaliza usuarios
     users = (dUsuarios.records||[]).map(u=>({
       id:   String(u.id||u.ID||''),
       user: String(u.user||u.USER||u.usuario||'').toLowerCase().trim(),
@@ -930,7 +924,6 @@ async function doLogin(){
   errEl.textContent='';
   if(!u||!p){errEl.textContent='Ingresa usuario y contraseña';return;}
 
-  // Cargar usuarios desde Sheets si aún no están
   if(users.length===0){
     btn.textContent='VERIFICANDO...'; btn.disabled=true;
     try{
@@ -993,7 +986,6 @@ function goPage(name){
   document.querySelectorAll('.nav-item').forEach(n=>{
     if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+name+"'")) n.classList.add('active');
   });
-  // Refresh de página al entrar
   if(name==='dashboard') renderDashboard();
   if(name==='stock') renderStock();
   if(name==='reporte') renderReporte();
@@ -1034,7 +1026,6 @@ function renderDashboard(){
     <div class="kpi-card"><div class="kpi-label">Total Cobrado</div><div class="kpi-value green">${fmt(cobrado)}</div><div class="kpi-sub">Pagos recibidos</div></div>
     <div class="kpi-card"><div class="kpi-label">Saldo Pendiente</div><div class="kpi-value red">${fmt(saldo)}</div><div class="kpi-sub">Por cobrar</div></div>`;
 
-  // Chart vendedores
   const byVendedor={};
   mv.forEach(v=>{const k=v.vendedor||'Otros';byVendedor[k]=(byVendedor[k]||0)+v.total;});
   const vendKeys=Object.keys(byVendedor);
@@ -1046,7 +1037,6 @@ function renderDashboard(){
     options:{plugins:{legend:{labels:{color:'#e8e8f0',font:{family:'DM Mono',size:11}}}},cutout:'65%'}
   });
 
-  // Chart por mes
   const byMes={};
   mv.forEach(v=>{if(v.fecha){const m=String(v.fecha).slice(0,7);byMes[m]=(byMes[m]||0)+v.total;}});
   const mesKeys=Object.keys(byMes).sort().slice(-8);
@@ -1058,7 +1048,6 @@ function renderDashboard(){
     options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b8a',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b6b8a',font:{size:10},callback:v=>'S/.'+v.toFixed(0)},grid:{color:'#2a2a3d'}}}}
   });
 
-  // Top clientes
   const byCliente={};
   mv.forEach(v=>{const k=v.cliente||'Sin nombre';byCliente[k]=(byCliente[k]||0)+v.total;});
   const topC=Object.entries(byCliente).sort((a,b)=>b[1]-a[1]).slice(0,6);
@@ -1073,7 +1062,6 @@ function renderDashboard(){
       <div class="top-amount">${fmt(val)}</div>
     </div>`).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Sin datos</div>';
 
-  // Top descripciones
   const byDesc={};
   mv.forEach(v=>{const k=v.descripcion||'Otros';byDesc[k]=(byDesc[k]||0)+v.total;});
   const topD=Object.entries(byDesc).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -1101,7 +1089,7 @@ function calcVSaldo(){
 // ════════════════════════════════════════
 // CARRITO DE PRODUCTOS
 // ════════════════════════════════════════
-let carrito = []; // [{id, nombre, precio, cantidad}]
+let carrito = [];
 
 function renderProdSearch(){
   const q=(document.getElementById('prod_search')?.value||'').toLowerCase();
@@ -1128,7 +1116,6 @@ function renderProdSearch(){
 }
 
 function agregarAlCarrito(id){
-  // Compara como string para evitar problemas con IDs numéricos de Sheets
   const p=productos.find(x=>String(x.id)===String(id));
   if(!p){showToast('Producto no encontrado','error');return;}
   const existe=carrito.find(x=>String(x.id)===String(id));
@@ -1175,10 +1162,8 @@ function aplicarCarrito(){
   const total=carrito.reduce((s,x)=>s+(x.precio*x.cantidad),0);
   document.getElementById('v_total').value=total.toFixed(2);
   calcVSaldo();
-  // Armar descripción de productos en el campo descripcion
   if(carrito.length>0){
     const desc=carrito.map(x=>`${x.nombre} x${x.cantidad}`).join(', ');
-    // Guardamos en un campo oculto para incluir en el registro
     window._carritoDesc=desc;
   }
   showToast(`✅ Total S/.${total.toFixed(2)} aplicado a la venta`);
@@ -1190,7 +1175,6 @@ function limpiarCarrito(){
   renderCarrito();
 }
 
-// ── Autocomplete clientes en nueva venta ──
 function renderClientesSugeridos(){
   filterClientesSugeridos();
 }
@@ -1265,12 +1249,10 @@ async function guardarVenta(){
   btn.disabled=true; btn.textContent='⏳ Guardando...';
   setSync('syncing','Guardando...');
   try{
-    // 1. Guardar venta principal
     const res=await apiCall('save',{sheet:'ventas', record});
     if(res.error) throw new Error(res.error);
     const ventaId=res.id||'';
 
-    // 2. Si hay carrito, guardar detalle en ALMACEN
     if(carrito.length>0){
       const descripcion=document.getElementById('v_descripcion').value;
       const items=carrito.map(x=>({
@@ -1367,7 +1349,6 @@ function renderRegistro(){
       </td></tr>`;
   }).join('');
   document.getElementById('regInfo').textContent=`${data.length===0?0:Math.min((regPage-1)*regPerPage+1,data.length)}–${Math.min(regPage*regPerPage,data.length)} de ${data.length}`;
-  // Pagination
   const btns=document.getElementById('regPagBtns'); btns.innerHTML='';
   const prev=document.createElement('button'); prev.className='page-btn'; prev.textContent='←';
   prev.onclick=()=>{if(regPage>1){regPage--;renderRegistro();}};  btns.appendChild(prev);
@@ -1511,7 +1492,6 @@ function renderReporte(){
     <div class="rs-card"><div class="rs-label">Cobrado</div><div class="rs-value green">${fmt(cobrado)}</div></div>
     <div class="rs-card"><div class="rs-label">Saldo</div><div class="rs-value red">${fmt(saldo)}</div></div>
     <div class="rs-card"><div class="rs-label">Cancelados</div><div class="rs-value green">${cancelados}</div></div>`;
-  // Gráfica evolución
   const byDay={};
   data.forEach(r=>{if(r.fecha)byDay[r.fecha]=(byDay[r.fecha]||0)+r.total;});
   const dayKeys=Object.keys(byDay).sort();
@@ -1522,7 +1502,6 @@ function renderReporte(){
       datasets:[{data:dayKeys.map(k=>byDay[k]),borderColor:'#f5c518',backgroundColor:'rgba(245,197,24,.08)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#f5c518'}]},
     options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b8a',font:{size:10},maxTicksLimit:10},grid:{display:false}},y:{ticks:{color:'#6b6b8a',font:{size:10},callback:v=>'S/.'+v.toFixed(0)},grid:{color:'#2a2a3d'}}}}
   });
-  // Tabla
   const tbody=document.getElementById('repBody');
   document.getElementById('repEmpty').style.display=data.length===0?'block':'none';
   tbody.innerHTML=data.map(r=>{
@@ -1558,7 +1537,6 @@ function renderStock(){
   const q=(document.getElementById('stock_search').value||'').toLowerCase();
   const cat=document.getElementById('stock_cat').value;
   const filtro=document.getElementById('stock_filtro').value;
-  // Populate cats
   const cats=[...new Set(productos.map(p=>p.categoria))].filter(Boolean).sort();
   const catEl=document.getElementById('stock_cat');
   const curCat=catEl.value;
@@ -1746,7 +1724,6 @@ function renderAlmacen(){
   if(almPage>totalPages) almPage=1;
   const slice=data.slice((almPage-1)*almPerPage, almPage*almPerPage);
 
-  // Summary cards
   const totalUnidades=data.reduce((s,r)=>s+(parseFloat(r.cantidad)||0),0);
   const totalSubtotal=data.reduce((s,r)=>s+(parseFloat(r.subtotal)||0),0);
   const totalProductos=[...new Set(data.map(r=>r.producto))].length;
@@ -1804,10 +1781,7 @@ async function exportAlmacenExcel(){
   if(data.length===0){showToast('Sin datos para exportar','warn');return;}
   showLoading('GENERANDO EXCEL...');
   try{
-    // Cabeceras
     const headers=['Fecha','Cliente','Vendedor','Descripción','Producto','Código','Categoría','Cantidad','Precio Unit.','Subtotal','Venta ID'];
-
-    // Filas de datos
     const rows=data.map(r=>[
       fmtDate(r.fecha),
       r.cliente||'',
@@ -1822,27 +1796,15 @@ async function exportAlmacenExcel(){
       String(r.ventaid||r.ventaId||''),
     ]);
 
-    // Crear workbook
     const wb=XLSX.utils.book_new();
     const wsData=[headers,...rows];
     const ws=XLSX.utils.aoa_to_sheet(wsData);
 
-    // Ancho de columnas
     ws['!cols']=[
-      {wch:12}, // Fecha
-      {wch:22}, // Cliente
-      {wch:18}, // Vendedor
-      {wch:18}, // Descripción
-      {wch:28}, // Producto
-      {wch:12}, // Código
-      {wch:14}, // Categoría
-      {wch:10}, // Cantidad
-      {wch:13}, // Precio Unit.
-      {wch:13}, // Subtotal
-      {wch:16}, // Venta ID
+      {wch:12},{wch:22},{wch:18},{wch:18},{wch:28},
+      {wch:12},{wch:14},{wch:10},{wch:13},{wch:13},{wch:16},
     ];
 
-    // Estilo de cabecera — fondo amarillo, negrita
     const headerRange=XLSX.utils.decode_range(ws['!ref']);
     for(let c=headerRange.s.c;c<=headerRange.e.c;c++){
       const cell=XLSX.utils.encode_cell({r:0,c});
@@ -1860,18 +1822,15 @@ async function exportAlmacenExcel(){
       };
     }
 
-    // Formato numérico para columnas de cantidad, precio y subtotal
     for(let r=1;r<=rows.length;r++){
       ['H','I','J'].forEach(col=>{
         const cell=ws[col+(r+1)];
         if(cell) cell.z='S/.#,##0.00';
       });
-      // Cantidad sin decimales
       const cellCant=ws['H'+(r+1)];
       if(cellCant) cellCant.z='0';
     }
 
-    // Fila de totales al final
     const totalRow=rows.length+2;
     const totalCant=data.reduce((s,r)=>s+(parseFloat(r.cantidad)||0),0);
     const totalSub=data.reduce((s,r)=>s+(parseFloat(r.subtotal)||0),0);
@@ -1883,10 +1842,8 @@ async function exportAlmacenExcel(){
     if(totalCellG) totalCellG.s={font:{bold:true},alignment:{horizontal:'right'}};
     if(totalCellJ) totalCellJ.s={font:{bold:true},fill:{fgColor:{rgb:'E8F5E9'}}};
 
-    // Agregar hoja y descargar
     XLSX.utils.book_append_sheet(wb,ws,'Almacén');
 
-    // Hoja resumen por producto
     const byProd={};
     data.forEach(r=>{
       const k=r.producto||'Sin nombre';
@@ -1902,7 +1859,6 @@ async function exportAlmacenExcel(){
     wsRes['!cols']=[{wch:30},{wch:12},{wch:14},{wch:18},{wch:14}];
     XLSX.utils.book_append_sheet(wb,wsRes,'Resumen por Producto');
 
-    // Descargar como .xlsx
     XLSX.writeFile(wb,`matfal_almacen_${fechaHoyPeru()}.xlsx`);
     showToast('📥 Excel generado correctamente');
   }catch(e){
@@ -1960,7 +1916,6 @@ function renderClientes(){
   document.getElementById('cliInfo').textContent=
     `${data.length===0?0:Math.min((cliPage-1)*cliPerPage+1,data.length)}–${Math.min(cliPage*cliPerPage,data.length)} de ${data.length} clientes`;
 
-  // Paginación
   const btns=document.getElementById('cliPagBtns'); btns.innerHTML='';
   const mkBtn=(label,fn,active=false)=>{
     const b=document.createElement('button');
